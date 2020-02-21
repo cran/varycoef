@@ -11,7 +11,7 @@ fullSVC_reggrid(m, p, cov_pars, nugget, seed = 123)
 
 \item{p}{integer. number of SVC}
 
-\item{cov_pars}{data.frame including the covariance parameters of SVCs, using an exponential covariance function. The columns must have the names \code{"var"} and \code{"range"}.}
+\item{cov_pars}{data.frame including the covariance parameters of SVCs, using an exponential covariance function. The columns must have the names \code{"var"} and \code{"scale"}.}
 
 \item{nugget}{scalar. variance of the nugget / error term.}
 
@@ -22,4 +22,24 @@ object of class \code{SpatialPointsDataFrame} (see \code{\link[sp]{SpatialPoints
 }
 \description{
 Samples SVC on a regular grid. The SVC have all mean 0.
+}
+\examples{
+# number of SVC
+p <- 3
+# sqrt of total number of observations
+m <- 20
+# covariance parameters
+(pars <- data.frame(var = c(0.1, 0.2, 0.3), 
+                    scale = c(0.3, 0.1, 0.2)))
+nugget.var <- 0.05
+
+# function to sample SVCs
+sp.SVC <- fullSVC_reggrid(m = m, p = p, 
+                          cov_pars = pars, 
+                          nugget = nugget.var)
+
+library(sp)
+# visualization of sampled SVC
+spplot(sp.SVC, colorkey = TRUE)
+
 }

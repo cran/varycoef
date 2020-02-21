@@ -1,21 +1,28 @@
-## ----setup, include=FALSE------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, 
+                      fig.width=7, fig.height=4)
+
+## ----install------------------------------------------------------------------
+# install from CRAN
+# install.packages("varycoef")
+
+# attach package
 library(varycoef)
 
-## ----define and sample SVC, warning=FALSE, fig.width=7, fig.height=7, message=FALSE----
+# general package help file (check out examples with manual vignette!!)
+help("varycoef")
+
+## ----SVC example--------------------------------------------------------------
+# setting seed
+set.seed(123)
 # number of SVC
 p <- 3
-
-(pars <- data.frame(mu = rep(0, p), 
-                    var = c(0.1, 0.2, 0.3), 
-                    scale = c(0.3, 0.1, 0.2)))
-nugget.var <- 0.05
-
 # sqrt of total number of observations
 m <- 20
-
-
-
+# covariance parameters
+(pars <- data.frame(var = c(0.1, 0.2, 0.3), 
+                    scale = c(0.3, 0.1, 0.2)))
+nugget.var <- 0.05
 
 # function to sample SVCs
 sp.SVC <- fullSVC_reggrid(m = m, p = p, 
@@ -23,281 +30,185 @@ sp.SVC <- fullSVC_reggrid(m = m, p = p,
                           nugget = nugget.var)
 
 library(sp)
-# visualization
+# visualization of sampled SVC
 spplot(sp.SVC, colorkey = TRUE)
 
-## ----sample covariates---------------------------------------------------
-# total number of observation
-n <- m^2
+## ----meuse intro--------------------------------------------------------------
+# attach sp and load data
+library(sp)
+data("meuse")
 
-X <- matrix(c(rep(1, n), rnorm((p-1)*n)), ncol = p)
-head(X)
+# documentation
+help("meuse")
 
-## ----compute response----------------------------------------------------
-y <- apply(X * as.matrix(sp.SVC@data[, 1:p]), 1, sum) + sp.SVC@data[, p+1]
+# overview
+summary(meuse)
+dim(meuse)
 
-## ----contorl parameters--------------------------------------------------
-control <- SVC_mle_control()
-str(control)
+## ----hist plot----------------------------------------------------------------
+par(mfrow = 1:2)
+# histogram of (log) cadmium 
+hist(meuse$cadmium); hist(log(meuse$cadmium))
+par(mfrow = c(1, 1))
 
-## ----illustrate tapering, echo = FALSE, fig.width=7, fig.height=7--------
+meuse$l_cad <- log(meuse$cadmium)
 
-r <- c(0.5, 0.3, 0.1)
-out <- lapply(c(list(NULL), as.list(r)), function(taper.range) {
-  
-  
-  locs <- coordinates(sp.SVC)
-  if (is.null(taper.range)) {
-    d <- as.matrix(dist(locs))
-  } else {
-    d <- spam::nearest.dist(locs, delta = taper.range)
-  }
-  
-  
-  # get covariance function
-  raw.cov.func <- varycoef:::MLE.cov.func("exp")
-  
-  # covariance function
-  cov.func <- function(x) raw.cov.func(d, x)
-    
-  
-  W <- X
-  
-  outer.W <- lapply(1:p, function(j) W[, j]%o%W[, j])
-  
-  
-  # tapering?
-  taper <- if(is.null(taper.range)) {
-    # without tapering
-    NULL
-  } else {
-    # with tapering
-    spam::cov.wend1(d, c(taper.range, 1, 0))
-  }
-  
-  x <- c(rep(1, 2*p+1), rep(0, p))
-  
-  S_y <- varycoef:::Sigma_y(x, p, cov.func, outer.W, taper)
-  
-  nll <- function() varycoef:::n2LL(x, cov.func, outer.W, y, X, W, taper = taper)
-  
-  list(d, taper, S_y, nll)
-})
+## ----spatial plot-------------------------------------------------------------
+# construct spatial object
+sp.meuse <- meuse
+coordinates(sp.meuse) <- ~x+y
+proj4string(sp.meuse) <- CRS("+init=epsg:28992")
 
+# using package tmap
+library(tmap)
+# producing an interactive map
+tmap_leaflet(tm_shape(sp.meuse) + tm_dots("l_cad", style = "cont"))
 
+## ----linear regression--------------------------------------------------------
+# linear model (LM)
+lm.fit <- lm(l_cad ~ 1+dist+lime+elev, data = meuse)
+summary(lm.fit)
 
-
-oldpar <- par(mfrow = c(2, 2))
-
-
-image(out[[1]][[3]])
-title(main = "No tapering applied")
-image(out[[2]][[3]])
-title(main = paste0("Taper range = ", r[1]))
-image(out[[3]][[3]])
-title(main = paste0("Taper range = ", r[2]))
-image(out[[4]][[3]])
-title(main = paste0("Taper range = ", r[3]))
-
-
+## ----LM residuals-------------------------------------------------------------
+oldpar <- par(mfrow = c(1, 2))
+plot(lm.fit, which = 1:2)
 par(oldpar)
 
+## ----LM spatial residuals-----------------------------------------------------
+# add LM residuals to data frame
+sp.meuse$LM_res <- resid(lm.fit)
+head(sp.meuse)
+# plot residuals at corresponding locations
+tmap_leaflet(tm_shape(sp.meuse) + tm_dots("LM_res", style = "cont"))
 
-## ----runtime tapering, fig.width=7, echo = TRUE, fig.height=5, warning=FALSE----
+## ----geostatistical-----------------------------------------------------------
+library(gstat)
+# empirical variogram
+eV <- variogram(LM_res ~ 1, sp.meuse)
+# define variogram model with initial values
+mV <- vgm(0.2, "Exp", 300, 0.4)
+# fit model 
+(fV <- fit.variogram( eV, mV))
+# plot empirical and fitted
+plot(eV, model=fV)
 
+## ----ordinary kriging---------------------------------------------------------
+# study area
+data("meuse.grid")
+coordinates(meuse.grid) <- ~x+y
+proj4string(meuse.grid) <- proj4string(sp.meuse)
+# kriging
+GS.fit <- krige(LM_res ~ 1, sp.meuse, 
+                newdata = meuse.grid, model = fV)
+# output
+tmap_leaflet(tm_shape(GS.fit) + tm_dots("var1.pred", style = "cont"))
 
-library(microbenchmark)
+## ----varycoef preparation-----------------------------------------------------
+# response variable
+y <- meuse$l_cad
+# covariates for fixed effects
+X <- model.matrix(~1+dist+lime+elev, data = meuse)
+# locations
+locs <- as.matrix(meuse[, 1:2])/1000
 
-(mb <- microbenchmark(no_tapering  = out[[1]][[4]](),
-                      tapering_0.5 = out[[2]][[4]](), 
-                      tapering_0.3 = out[[3]][[4]](),
-                      tapering_0.1 = out[[4]][[4]]())
+## ----varycoef random effect---------------------------------------------------
+# covariates for SVC (random effects)
+W <- model.matrix(~1+dist+lime, data = meuse)
+
+## ----varycoef control---------------------------------------------------------
+# construct initial value (recall transformation from meters to kilometers)
+(init <- c(
+  # 3 times for 3 SVC
+  rep(c(
+    # range
+    fV$range[2]/1000,
+    # variance
+    fV$psill[2]),     
+  3), 
+  # nugget
+  fV$psill[1]
+))
+# control settings vor MLE
+control <- SVC_mle_control(
+  # profile likelihood optimization
+  profileLik = TRUE,
+  # initial values
+  init = init
 )
 
-boxplot(mb, unit = "ms", log = TRUE, xlab = "tapering", ylab = "time (milliseconds)")
+## ----varycoef fit-------------------------------------------------------------
+# MLE
+VC.fit <- SVC_mle(y = y, X = X, W = W, locs = locs,
+                  control = control)
+# outcome
+summary(VC.fit)
 
-## ----mean initials-------------------------------------------------------
-(mu.init <- coef(lm(y~.-1, data = data.frame(y = y, X = X))))
-
-## ----variance initials---------------------------------------------------
-(var.init <- sigma(lm(y~.-1, data = data.frame(y = y, X = X)))^2)
-
-## ----scale initials------------------------------------------------------
-scale.init <- 0.2
-
-## ----joint initials------------------------------------------------------
-init <- c(
-  # GRFs scales and variances
-  rep(c(scale.init, var.init), p),
-  # nugget variance
-  var.init,
-   # means
-  mu.init)
-
-## ----overwrite initials--------------------------------------------------
-# default
-control$init
-
-# overwrite
-control$init <- init
-
-# create new
-control <- SVC_mle_control(init = init)
-
-## ----overwrite save.fitted-----------------------------------------------
-# default
-control$save.fitted
-
-# overwrite
-control$save.fitted <- TRUE
-
-## ----show profileLik-----------------------------------------------------
-# default
-control$profileLik
-
-## ----SVC MLE-------------------------------------------------------------
-fit <- SVC_mle(y = y, X = X, locs = coordinates(sp.SVC), control = control)
-
-## ----SVC_mle methods, fig.width=7, fig.height=7--------------------------
-# estimated ...
-# ... covariance parameters
-cov_par(fit)
- # ... mean effects
-coef(fit)
-
-# summary
-summary(fit)
-
-# residual plots
+# residuals
 oldpar <- par(mfrow = c(1, 2))
-plot(fit, which = 1:2)
-
+plot(VC.fit, which = 1:2)
 par(mfrow = c(1, 1))
-plot(fit, which = 3)
-
+plot(VC.fit, which = 3)
 par(oldpar)
 
-## ----make predictions----------------------------------------------------
-# calling predictions without specifying new locations (newlocs) or 
-# new covariates (newX) gives estimates of SVC only at the training locations.
-pred.SVC <- predict(fit)
+## ----varycoef predict locations-----------------------------------------------
+newlocs <- coordinates(meuse.grid)/1000
+# prediciton
+VC.pred <- predict(VC.fit, newlocs = newlocs)
+# outcome
+head(VC.pred)
+# transformation to a spatial points data frame
+colnames(VC.pred)[1:3] <- c("Intercept", "dist", "lime")
+sp.VC.pred <- VC.pred
+coordinates(sp.VC.pred) <- coordinates(meuse.grid)
+proj4string(sp.VC.pred) <- proj4string(sp.meuse)
 
-## ----visualization of prediction, fig.width=7, fig.height=7--------------
-colnames(pred.SVC)[1:p] <- paste0("pred.",colnames(pred.SVC)[1:p])
-coordinates(pred.SVC) <- ~loc_x+loc_y
-all.SVC <- cbind(pred.SVC, sp.SVC[, 1:3])
+# points of interest (POI), we come back to them later
+POI1.id <- 235
+POI2.id <- 2016
+POI1 <- meuse.grid[POI1.id, ]
+POI2 <- meuse.grid[POI2.id, ]
 
-# compute errors
-all.SVC$err.SVC_1 <- all.SVC$pred.SVC_1 - all.SVC$SVC_1
-all.SVC$err.SVC_2 <- all.SVC$pred.SVC_2 - all.SVC$SVC_2
-all.SVC$err.SVC_3 <- all.SVC$pred.SVC_3 - all.SVC$SVC_3
+tm_POIs <- 
+  tm_shape(POI1) +
+  # square (pch = 15)
+  tm_symbols(shape = 15, col = "black") +
+  tm_shape(POI2) +
+  # triangle (pch = 17)
+  tm_symbols(shape = 17, col = "black")
 
-colnames(all.SVC@data) <- paste0(rep(c("pred.", "true.", "err."), each = p), "SVC_", rep(1:p, 3))
+## ----fig.height=6-------------------------------------------------------------
+# tm.GS: GS fit
+tm.GS <- tm_shape(GS.fit) + tm_dots("var1.pred", style = "cont")
 
-spplot(all.SVC[, paste0(rep(c("true.", "err.", "pred."), each = p), 
-                        "SVC_", 1:p)], colorkey = TRUE)
+# tm1: Intercept
+tm1 <- tm_shape(sp.VC.pred) + 
+  tm_dots("Intercept", style = "cont") +
+  tm_POIs
+# tm2: dist
+tm2 <- tm_shape(sp.VC.pred) + 
+  tm_dots("dist", style = "cont") +
+  tm_POIs
+# tm1: Intercept
+tm3 <- tm_shape(sp.VC.pred) + 
+  tm_dots("lime", style = "cont") +
+  tm_POIs
 
-## ----n2500 figure, fig.width=7, fig.height=7, echo = TRUE----------------
-knitr::include_graphics("figures/SVCs_result_n2500_p3.png")
+tmap_arrange(list(tm.GS, tm1, tm2, tm3), ncol = 2, nrow = 2)
 
-## ----n2500 example, eval=FALSE-------------------------------------------
-#  # new m
-#  m <- 50
-#  
-#  # new SVC model
-#  sp.SVC <- fullSVC_reggrid(m = m, p = p,
-#                            cov_pars = pars,
-#                            nugget = nugget.var)
-#  
-#  spplot(sp.SVC, colorkey = TRUE)
-#  
-#  # total number of observations
-#  n <- m^2
-#  X <- matrix(c(rep(1, n), rnorm((p-1)*n)), ncol = p)
-#  y <- apply(X * as.matrix(sp.SVC@data[, 1:p]), 1, sum) + sp.SVC@data[, p+1]
-#  
-#  
-#  fit <- SVC_mle(y = y, X = X, locs = coordinates(sp.SVC))
-#  
-#  
-#  
-#  sp2500 <- predict(fit)
-#  
-#  
-#  colnames(sp2500)[1:p] <- paste0("pred.",colnames(sp2500)[1:p])
-#  coordinates(sp2500) <- ~loc_x+loc_y
-#  all.SVC <- cbind(sp2500, sp.SVC[, 1:3])
-#  
-#  # compute errors
-#  all.SVC$err.SVC_1 <- all.SVC$pred.SVC_1 - all.SVC$SVC_1
-#  all.SVC$err.SVC_2 <- all.SVC$pred.SVC_2 - all.SVC$SVC_2
-#  all.SVC$err.SVC_3 <- all.SVC$pred.SVC_3 - all.SVC$SVC_3
-#  
-#  colnames(all.SVC@data) <- paste0(rep(c("pred.", "true.", "err."), each = p), "SVC_", rep(1:p, 3))
-#  
-#  png(filename = "figures/SVCs_result_n2500_p3.png", width = 960, height = 960)
-#  spplot(all.SVC[, paste0(rep(c("true.", "err.", "pred."), each = p),
-#                          "SVC_", 1:p)], colorkey = TRUE,
-#         as.table = TRUE, layout = c(3, 3))
-#  dev.off()
+## ----coef means---------------------------------------------------------------
+coef(VC.fit)
 
-## ----sample SVC model----------------------------------------------------
-# new m
-m <- 20
+## ----POI equations------------------------------------------------------------
+# POI1:
+# SVC deviations at POI1
+VC.pred[POI1.id, 1:3]
+# combined
+(coefs.poi1 <- coef(VC.fit) + c(as.numeric(VC.pred[POI1.id, 1:3]), 0))
+# POI2
+# SVC deviations at POI2
+VC.pred[POI2.id, 1:3]
+# combined
+(coefs.poi2 <- coef(VC.fit) + c(as.numeric(VC.pred[POI2.id, 1:3]), 0))
 
-# number of fixed effects
-pX <- 4
-# number of mean-zero SVC
-pW <- 3
-
-
-# mean values
-mu <- 1:pX
-
-# new SVC model
-sp.SVC <- fullSVC_reggrid(m = m, p = pW, 
-                          cov_pars = pars,
-                          nugget = nugget.var,
-                          seed = 4)
-
-# total number of observations
-n <- m^2
-X <- matrix(c(rep(1, n), rnorm((pX-1)*n, 
-                               mean = rep(1:(pX-1), each = n), 
-                               sd = rep(0.2*(1:(pX-1)), each = n))), ncol = pX)
-W <- X[, 1:pW]
-# calculate y 
-y <- 
-  # X * mu
-  X %*% mu +
-  # W * beta_tilde
-  apply(W * as.matrix(sp.SVC@data[, 1:pW]), 1, sum) + 
-  # nugget
-  sp.SVC@data[, pW+1]
-
-# new initial values
-control <- SVC_mle_control(init = c(init[1:(2*pW + 1)], mu))
-
-# MLE
-fit <- SVC_mle(y = y, X = X, W = W, locs = coordinates(sp.SVC), control = control)
-
-
-## ----give predictions----------------------------------------------------
-set.seed(5)
-newlocs <- matrix(c(0, 0), ncol = 2)
-
-
-# only SVC prediction without y prediction
-(pred.SVC <- predict(fit, newlocs = newlocs))
-
-
-
-# SVC prediction and y prediction (with predictive variance)
-newX <- matrix(c(1, rnorm(pX-1)), ncol = pX)
-newW <- matrix(newX[, 1:pW], ncol = pW)
-
-(pred.SVC <- predict(fit, 
-                     newlocs = newlocs, 
-                     newX = newX, newW = newW, 
-                     compute.y.var = TRUE))
+options(digits = 3)
 

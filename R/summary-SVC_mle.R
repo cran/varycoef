@@ -96,9 +96,9 @@ print.summary.SVC_mle <- function(x, digits = max(3L, getOption("digits") - 3L),
   cat(paste0("\n\nMLE:\nThe MLE terminated after ",
              x$optim.out$counts["function"], " function evaluations with convergence code ",
              x$optim.out$convergence, "\n(0 meaning that the optimization was succesful).\n"))
-  cat(paste0("The final", if (attr(x$logLik, "penalized")) {" penalized"} else {""} ,
+  cat(paste0("The final", if (attr(x$logLik, "penalized")) {" regularized"} else {""} ,
              if (attr(x$logLik, "profileLik")) {" profile"} else {""},
-             " Likelihood value for ", attr(x$logLik, "df"), " parameters is " ,
+             " likelihood value for ", attr(x$logLik, "df"), " parameters is " ,
              formatC(x$logLik,digits = digits), ".\n"))
   cat("\n")
   invisible(x)
