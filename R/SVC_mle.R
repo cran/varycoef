@@ -174,7 +174,7 @@ MLE_computation <- function(y, X, locs, W,
         method  = "L-BFGS-B",
         lower   = lower[1:(2*pW + 1)],
         upper   = upper[1:(2*pW + 1)],
-        hessian = TRUE,
+        hessian = control$hessian,
         control = optim.control)
     } else {
       # ... with parallelization
@@ -206,7 +206,7 @@ MLE_computation <- function(y, X, locs, W,
           pc.dens  = pcp.neg2dens,
         lower   = lower[1:(2*pW + 1)],
         upper   = upper[1:(2*pW + 1)],
-        hessian = TRUE,
+        hessian = control$hessian,
         control = optim.control,
         parallel = control$parallel
       )
@@ -246,7 +246,7 @@ MLE_computation <- function(y, X, locs, W,
         method  = "L-BFGS-B",
         lower   = lower,
         upper   = upper,
-        hessian = TRUE,
+        hessian = control$hessian,
         control = optim.control
       )
     } else {
@@ -278,7 +278,7 @@ MLE_computation <- function(y, X, locs, W,
           pc.dens  = pcp.neg2dens,
         lower   = lower,
         upper   = upper,
-        hessian = TRUE,
+        hessian = control$hessian,
         control = optim.control,
         parallel = control$parallel
       )
@@ -376,6 +376,7 @@ create_SVC_mle <- function(ML_estimate, y, X, W, locs, control) {
 #' @param mean.est    if \code{profileLik} is \code{TRUE}, the means have to be estimated seperately. \code{"GLS"} uses the generalized least square estimate while \code{"OLS"} uses the ordinary least squares estimate.
 #' @param pc.prior    takes vector of \eqn{\rho_0, \alpha_\rho, \sigma_0, \alpha_\sigma} to compute penalized complexity priors. This regulates the optimization process. Currently, only supported for Gaussian random fields of Matérn class. Based on the idea by Fulgstad et al. (2018) \doi{10.1080/01621459.2017.1415907}.
 #' @param extract_fun logical. If \code{TRUE}, the function call of \code{\link{SVC_mle}} stops before the MLE and gives back the objective function of the MLE as well as all used arguments. If \code{FALSE}, regular MLE is conducted.
+#' @param hessian     logical, feault is \code{FALSE}. Gives back Hessian matrix, see \link[stats]{optim}.
 #' @param ...         further parameters yet to be implemented
 #'
 #' @details The argument \code{extract_fun} is useful, when one wants to modify the objective function. Further, when trying to parallelize the optimization, it is useful to check whether a single evaluation of the objective function takes longer than 0.05 seconds, cf. Gerber and Furrer (2019) \doi{10.32614/RJ-2019-030}. Platform specific issues can be sorted out by the user by setting up their own optimization.
@@ -407,12 +408,14 @@ SVC_mle_control.default <- function(cov.name = c("exp", "sph"),
                                     profileLik = FALSE,
                                     mean.est = c("GLS", "OLS"),
                                     pc.prior = NULL,
-                                    extract_fun = FALSE, ...) {
+                                    extract_fun = FALSE,
+                                    hessian = FALSE, ...) {
   stopifnot(is.null(tapering) |
               (tapering>=0) |
               is.logical(save.fitted) |
               is.logical(profileLik) |
-              is.logical(extract_fun))
+              is.logical(extract_fun) |
+              is.logical(hessian))
 
 
   list(cov.name = match.arg(cov.name),
@@ -426,6 +429,7 @@ SVC_mle_control.default <- function(cov.name = c("exp", "sph"),
        mean.est = match.arg(mean.est),
        pc.prior = pc.prior,
        extract_fun = extract_fun,
+       hessian = hessian,
        ...)
 }
 
@@ -608,7 +612,9 @@ SVC_mle.default <- function(y, X, locs, W = NULL,
 
   if (is.function(ML_estimate$obj_fun)) {
     # extract objective function
-    return(ML_estimate)
+    object <- ML_estimate
+    class(object) <- "SVC_obj_fun"
+    return(object)
   } else {
     # after optimization
     object <- create_SVC_mle(ML_estimate, y, X, W, locs, control)

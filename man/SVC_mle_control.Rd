@@ -20,6 +20,7 @@ SVC_mle_control(...)
   mean.est = c("GLS", "OLS"),
   pc.prior = NULL,
   extract_fun = FALSE,
+  hessian = FALSE,
   ...
 )
 
@@ -49,6 +50,8 @@ SVC_mle_control(...)
 \item{pc.prior}{takes vector of \eqn{\rho_0, \alpha_\rho, \sigma_0, \alpha_\sigma} to compute penalized complexity priors. This regulates the optimization process. Currently, only supported for Gaussian random fields of Matérn class. Based on the idea by Fulgstad et al. (2018) \doi{10.1080/01621459.2017.1415907}.}
 
 \item{extract_fun}{logical. If \code{TRUE}, the function call of \code{\link{SVC_mle}} stops before the MLE and gives back the objective function of the MLE as well as all used arguments. If \code{FALSE}, regular MLE is conducted.}
+
+\item{hessian}{logical, feault is \code{FALSE}. Gives back Hessian matrix, see \link[stats]{optim}.}
 
 \item{object}{An object of class \code{SVC_mle}. The function then extracts the control settings from the particular function call used to compute \code{object}.}
 }
