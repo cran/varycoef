@@ -4,24 +4,41 @@
 \alias{fullSVC_reggrid}
 \title{Sample Function for SVCs}
 \usage{
-fullSVC_reggrid(m, p, cov_pars, nugget, seed = 123)
+fullSVC_reggrid(m, p, cov_pars, nugget, seed = 123, given.locs = NULL)
 }
 \arguments{
-\item{m}{integer. square root number of observations, in total the function will sample \eqn{m^2} locations on a regular grid.}
+\item{m}{(\code{numeric(1)}) \cr
+Number of observations in one dimension, i.i, the square root number of
+total number of observation locations \eqn{n = m^2}.}
 
-\item{p}{integer. number of SVC}
+\item{p}{(\code{numeric(1)}) \cr
+Number of SVCs.}
 
-\item{cov_pars}{data.frame including the covariance parameters of SVCs, using an exponential covariance function. The columns must have the names \code{"var"} and \code{"scale"}.}
+\item{cov_pars}{(\code{data.frame(p, 2)}) \cr
+Contains the covariance parameters of SVCs. The two columns must have the
+names \code{"var"} and \code{"scale"}. These covariance parameters are
+then used for sampling the respective SVCs.}
 
-\item{nugget}{scalar. variance of the nugget / error term.}
+\item{nugget}{(\code{numeric(1)}) \cr
+Variance of the nugget / error term.}
 
-\item{seed}{integer. seed for sampling}
+\item{seed}{(\code{numeric(1)}) \cr
+Seed set within the function for sampling.}
+
+\item{given.locs}{(\code{NULL} or \code{data.frame(n, 2)}) \cr
+If \code{NULL}, the observations locations are sampled from a regular grid,
+Otherwise, the \code{data.frame} contains the observation locations.
+The data frame must have two columns of name \code{"x"} and \code{"y"}.
+The number of observations is then the number of rows \code{n}.}
 }
 \value{
-object of class \code{SpatialPointsDataFrame} (see \code{\link[sp]{SpatialPointsDataFrame-class}}) of the sampled SVC including the nugget.
+\code{SpatialPointsDataFrame} \cr
+   (see \code{\link[sp]{SpatialPointsDataFrame-class}}) of the sampled SVC
+   including the nugget.
 }
 \description{
-Samples SVC on a regular grid. The SVC have all mean 0.
+Samples SVCs on a regular quadratic (Cartesian) grid. The SVCs
+have all mean 0 and an exponential covariance function is used.
 }
 \examples{
 # number of SVC
@@ -29,13 +46,13 @@ p <- 3
 # sqrt of total number of observations
 m <- 20
 # covariance parameters
-(pars <- data.frame(var = c(0.1, 0.2, 0.3), 
+(pars <- data.frame(var = c(0.1, 0.2, 0.3),
                     scale = c(0.3, 0.1, 0.2)))
 nugget.var <- 0.05
 
 # function to sample SVCs
-sp.SVC <- fullSVC_reggrid(m = m, p = p, 
-                          cov_pars = pars, 
+sp.SVC <- fullSVC_reggrid(m = m, p = p,
+                          cov_pars = pars,
                           nugget = nugget.var)
 
 library(sp)

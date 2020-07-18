@@ -29,9 +29,16 @@ MLE_computation <- function(y, X, locs, W,
 
   # define distance matrix
   if (is.null(control$tapering)) {
-    d <- as.matrix(stats::dist(locs))
+    d <- as.matrix(do.call(spam::nearest.dist,
+                           c(list(x = locs,
+                                  delta  = 1e99,
+                                  upper = NULL),
+                             control$dist)))
   } else {
-    d <- spam::nearest.dist(locs, delta = control$tapering)
+    d <- do.call(spam::nearest.dist,
+                 c(list(x = locs,
+                        delta  = control$tapering),
+                   control$dist))
   }
 
 
@@ -363,23 +370,74 @@ create_SVC_mle <- function(ML_estimate, y, X, W, locs, control) {
 
 #' @title Set Parameters for \code{SVC_mle}
 #'
-#' @description Function to set up control parameters for \code{\link{SVC_mle}}
+#' @description Function to set up control parameters for \code{\link{SVC_mle}}.
+#' In the following, we assume the SVC model to have \eqn{p} GPs, which model the
+#' SVCs, and \eqn{q} fixed effects.
 #'
-#' @param cov.name    name of the covariance function defining the covariance matrix of the GRF. Currently, only \code{"exp"} for the exponential and \code{"exp"} for spherical covariance functions are supported.
-#' @param tapering    if \code{NULL}, no tapering is applied. If a scalar is given, covariance tapering with this taper range is applied, for all GRF modelling the SVC.
-#' @param parallel    list with arguments for parallelization, see documentation of \code{\link[optimParallel]{optimParallel}}
-#' @param init        numeric. Initial values for optimization procedure. The vector consists of p-times (alternating) scale and variance, the nugget variance and the p + p.fix mean effects
-#' @param lower       lower bound for optim, default \code{NULL} sets the lower bounds to 1e-6 for covariance parameters and \code{-Inf} for mean parameters.
-#' @param upper       upper bound for optim, default \code{NULL} sets the upper bounds to \code{Inf} for covariance and mean parameters.
-#' @param save.fitted logical. If \code{TRUE}, calculates the fitted values and residuals after MLE and saves them.
-#' @param profileLik  logical. If \code{TRUE}, MLE is done over profile Likelihood of covariance parameters.
-#' @param mean.est    if \code{profileLik} is \code{TRUE}, the means have to be estimated seperately. \code{"GLS"} uses the generalized least square estimate while \code{"OLS"} uses the ordinary least squares estimate.
-#' @param pc.prior    takes vector of \eqn{\rho_0, \alpha_\rho, \sigma_0, \alpha_\sigma} to compute penalized complexity priors. This regulates the optimization process. Currently, only supported for Gaussian random fields of Matérn class. Based on the idea by Fulgstad et al. (2018) \doi{10.1080/01621459.2017.1415907}.
-#' @param extract_fun logical. If \code{TRUE}, the function call of \code{\link{SVC_mle}} stops before the MLE and gives back the objective function of the MLE as well as all used arguments. If \code{FALSE}, regular MLE is conducted.
-#' @param hessian     logical, feault is \code{FALSE}. Gives back Hessian matrix, see \link[stats]{optim}.
+#' @param cov.name  (\code{character(1)}) \cr
+#'    Name of the covariance function defining the covariance matrix of the GRF.
+#'    Currently, only \code{"exp"} for the exponential and \code{"exp"} for
+#'    spherical covariance functions are supported.
+#' @param tapering  (\code{NULL} or \code{numeric(1)}) \cr
+#'    If \code{NULL}, no tapering is applied. If a scalar is given, covariance
+#'    tapering with this taper range is applied, for all Gaussian processes
+#'    modelling the SVC.
+#' @param parallel  (\code{NULL} or \code{list}) \cr
+#'    If \code{NULL}, no parallelization is applied. If cluster has been
+#'    established, define arguments for parallelization with a list, see
+#'    documentation of \code{\link[optimParallel]{optimParallel}}.
+#' @param init  (\code{numeric(2p+1+q*as.numeric(profileLik))}) \cr
+#'    Initial values for optimization procedure. The vector consists of p-times
+#'    (alternating) scale and variance, the nugget variance and (if
+#'    \code{profileLik = TRUE}) q mean effects.
+#' @param lower  (\code{NULL} or \code{numeric(2p+1+q*as.numeric(profileLik))}) \cr
+#'    Lower bound for \code{init} in \code{optim}. Default \code{NULL} sets the
+#'    lower bounds to 1e-05 for range and nugget parameters, 0 for variance
+#'    parameters and \code{-Inf} for mean parameters.
+#' @param upper  (\code{NULL} or \code{numeric(2p+1+q*as.numeric(profileLik))}) \cr
+#'    Upper bound for \code{init} in \code{optim}. Default \code{NULL} sets the
+#'    upper bounds for all parameters to \code{Inf}.
+#' @param save.fitted (\code{logical(1)}) \cr
+#'    If \code{TRUE}, calculates the fitted values and residuals after MLE and
+#'    stores them. This is necessary to call \code{\link{residuals}} and
+#'    \code{\link{fitted}} methods afterwards.
+#' @param profileLik  (\code{logical(1)}) \cr
+#'    If \code{TRUE}, MLE is done over profile Likelihood of covariance
+#'    parameters.
+#' @param mean.est  (\code{character(1)}) \cr
+#'    If \code{profileLik = TRUE}, the means have to be estimated seperately for
+#'    each step. \code{"GLS"} uses the generalized least square estimate while
+#'    \code{"OLS"} uses the ordinary least squares estimate.
+#' @param pc.prior  (\code{NULL} or \code{numeric(4)}) \cr
+#'    If numeric vector is given, penalized complexity priors are applied. The
+#'    order is \eqn{\rho_0, \alpha_\rho, \sigma_0, \alpha_\sigma} to give some
+#'    prior believes for the range and the standard deviation of GPs, such that
+#'    \eqn{P(\rho < \rho_0) = \alpha_\rho, P(\sigma > \sigma_0) = \alpha_\sigma}.
+#'    This regulates the optimization process. Currently, only supported for
+#'    GPs with of Matérn class covariance functions. Based on the idea by
+#'    Fulgstad et al. (2018) \doi{10.1080/01621459.2017.1415907}.
+#' @param extract_fun (\code{logical(1)}) \cr
+#'    If \code{TRUE}, the function call of \code{\link{SVC_mle}} stops before
+#'    the MLE and gives back the objective function of the MLE as well as all
+#'    used arguments. If \code{FALSE}, regular MLE is conducted.
+#' @param hessian  (\code{logical(1)}) \cr
+#'    If \code{FALSE}, Hessian matrix is computed, see \link[stats]{optim}.
+#' @param dist     (\code{list}) \cr
+#'    List containing the arguments of \link[spam]{nearestdist}. This controls
+#'    the method of how the distances and therefore dependency structures are
+#'    calculated. The default gives Euclidean distances in a \eqn{d}-dimensional
+#'    space. Further editable arguments are \code{p, miles, R}, see help file of
+#'    \link[spam]{nearestdist}. The other arguments, i.e., \code{x, y, delta, upper},
+#'    are set and not to be altered. Without tapering, \code{delta} is set to
+#'    \eqn{1e99}.
 #' @param ...         further parameters yet to be implemented
 #'
-#' @details The argument \code{extract_fun} is useful, when one wants to modify the objective function. Further, when trying to parallelize the optimization, it is useful to check whether a single evaluation of the objective function takes longer than 0.05 seconds, cf. Gerber and Furrer (2019) \doi{10.32614/RJ-2019-030}. Platform specific issues can be sorted out by the user by setting up their own optimization.
+#' @details The argument \code{extract_fun} is useful, when one wants to modify
+#'    the objective function. Further, when trying to parallelize the
+#'    optimization, it is useful to check whether a single evaluation of the
+#'    objective function takes longer than 0.05 seconds to evaluate,
+#'    cf. Gerber and Furrer (2019) \doi{10.32614/RJ-2019-030}. Platform specific
+#'    issues can be sorted out by the user by setting up their own optimization.
 #'
 #' @return A list with which \code{\link{SVC_mle}} can be controlled.
 #' @seealso \code{\link{SVC_mle}}
@@ -409,7 +467,9 @@ SVC_mle_control.default <- function(cov.name = c("exp", "sph"),
                                     mean.est = c("GLS", "OLS"),
                                     pc.prior = NULL,
                                     extract_fun = FALSE,
-                                    hessian = FALSE, ...) {
+                                    hessian = FALSE,
+                                    dist = list(method = "euclidean"),
+                                    ...) {
   stopifnot(is.null(tapering) |
               (tapering>=0) |
               is.logical(save.fitted) |
@@ -430,10 +490,13 @@ SVC_mle_control.default <- function(cov.name = c("exp", "sph"),
        pc.prior = pc.prior,
        extract_fun = extract_fun,
        hessian = hessian,
+       dist = dist,
        ...)
 }
 
-#' @param object An object of class \code{SVC_mle}. The function then extracts the control settings from the particular function call used to compute \code{object}.
+#' @param object  (\code{SVC_mle}) \cr
+#'   The function then extracts the control settings from the function call
+#'   used to compute in the given \code{SVC_mle} object.
 #'
 #' @rdname SVC_mle_control
 #' @export
@@ -452,31 +515,53 @@ SVC_mle_control.SVC_mle <- function(object, ...) {
 
 #' @title MLE of SVC model
 #'
-#' @description Calls MLE of the SVC model defined as:
+#' @description Conducts a maximum likelihood (MLE) estimation for an SVC model
+#' defined as:
 #'
 #' \deqn{y(s) = X \mu + W \eta (s) + \epsilon(s)}
 #'
 #' where:
 #' \itemize{
-#'   \item y is the response (vector of length n)
-#'   \item X is the data matrix for the fixed effects covariates
-#'   \item \eqn{\mu} is the vetor containing the fixed effects
-#'   \item W is the data matrix for the SVCs represented by zero mean GRF
-#'   \item \eqn{\eta} are the SVCs represented by zero mean GRF
+#'   \item \eqn{y} is the response (vector of length \eqn{n})
+#'   \item \eqn{X} is the data matrix for the fixed effects covariates. The
+#'   dimensions are \eqn{n} times \eqn{q}. This leads to \eqn{q} fixed effects.
+#'   \item \eqn{\mu} is the vector containing the fixed effects
+#'   \item W is the data matrix for the SVCs modeled by GPs. The dimensions are
+#'   \eqn{n} times \eqn{p}. This lead to \eqn{p} SVCs in the model.
+#'   \item \eqn{\eta} are the SVCs represented by a GP.
 #'   \item \eqn{\epsilon} is the nugget effect
 #' }
 #'
-#' The MLE is done by calling the function \code{optim}.
+#' The MLE is an numeric optimization that runs \code{\link[stats]{optim}} or
+#' (if parallelized) \code{\link[optimParallel]{optimParallel}}.
 #'
-#' @param y              numeric response vector of dimension n.
-#' @param X              matrix of covariates of dimension n x pX. Intercept has to be added manually.
-#' @param locs           matrix of locations of dimension n X 2. May contain multiple observations at single location which (may) cause a permutation of \code{y}, \code{X}, \code{W} and \code{locs}.
-#' @param W              Optional matrix of covariates with fixed effects, i.e. non-SVC, of dimension n x pW
-#' @param control        list of control paramaters, usually given by \code{\link{SVC_mle_control}}
-#' @param optim.control  list of control arguments for optimization function, see Details in \code{\link{optim}}
+#' @param y  (\code{numeric(n)}) \cr
+#'    Response.
+#' @param X  (\code{matrix(n, q)}) \cr
+#'    Design matrix. Intercept has to be added manually.
+#' @param locs  (\code{matrix(n, d)}) \cr
+#'    Locations in a \eqn{d}-dimensional space. May contain multiple
+#'    observations at single location.
+#' @param W  (\code{NULL} or \code{matrix(n, p)}) \cr
+#'    If \code{NULL}, the same matrix as provided in \code{X} is used. This
+#'    fits a full SVC model, i.e., each covariate effect is modeled with a mean
+#'    and an SVC. In this case we have \eqn{p = q}. If optional matrix \code{W}
+#'    is provided, SVCs are only modeled for covariates within matrix \code{W}.
+#' @param control  (\code{list}) \cr
+#'    Control paramaters given by \code{\link{SVC_mle_control}}.
+#' @param optim.control  (\code{list}) \cr
+#'    Control arguments for optimization function, see Details in
+#'    \code{\link{optim}}.
 #' @param ...            further arguments
 #'
-#' @return Object of class \code{SVC_mle} if \code{control$extract_fun} is \code{FALSE}, meaning that a MLE has been conducted. Otherwise, if \code{control$extract_fun} is \code{TRUE}, the function return a list with the objective function being used in the optimization (named \code{obj_fun}) and the arguments to call it (named \code{args}). For further detials, see description of \code{\link{SVC_mle_control}}.
+#' @return Object of class \code{SVC_mle} if \code{control$extract_fun = FALSE},
+#' meaning that a MLE has been conducted. Otherwise, if \code{control$extract_fun = TRUE},
+#' the function returns a list with two entries:
+#' \itemize{
+#'    \item \code{obj_fun}: the objective function used in the optimization
+#'    \item \code{args}: the arguments to evaluate the objective function.
+#' }
+#' For further detials, see description of \code{\link{SVC_mle_control}}.
 #'
 #' @author Jakob Dambon
 #'
@@ -504,6 +589,8 @@ SVC_mle_control.SVC_mle <- function(object, ...) {
 #' control <- SVC_mle_control(
 #'   # initial values of optimization
 #'   init = rep(0.1, 2*p+1),
+#'   # lower bound
+#'   lower = rep(1e-6, 2*p+1),
 #'   # using profile likelihood
 #'   profileLik = TRUE
 #' )
@@ -656,19 +743,31 @@ SVC_mle.formula <- function(formula, data, RE_formula = NULL,
 
 
 
-#' Prediction of SVC (and response variable)
+#' Prediction of SVCs (and response variable)
 #'
-#' @param object        output of \code{\link{SVC_mle}}
-#' @param newlocs       matrix of dimension n' x 2. These are the new locations the SVCs are predicted for. If \code{NULL}, the locations from the \code{SVC_mle} (i.e. \code{locs}) are considered.
-#' @param newX          optional matrix of dimension n' x pX. If provided, besides the predicted SVC, the function also returns the predicted response variable.
-#' @param newW          optional matrix of dimension n' x pW.
-#' @param compute.y.var logical. If y will be estimated and \code{TRUE}, the standard deviation of each estimate will be computed.
+#' @param object  (\code{SVC_mle}) \cr
+#'    Model obtained from \code{\link{SVC_mle}} function call.
+#' @param newlocs  (\code{NULL} or \code{matrix(n.new, 2)}) \cr
+#'    If \code{NULL}, then function uses observed locations of model to estimate
+#'    SVCs. Otherwise, these are the new locations the SVCs are predicted for.
+#' @param newX  (\code{NULL} or \code{matrix(n.new, q)}) \cr
+#'    If provided (together with \code{newW}), the function also returns the
+#'    predicted response variable.
+#' @param newW  (\code{NULL} or \code{matrix(n.new, p)}) \cr
+#'    If provided (together with \code{newX}), the function also returns the
+#'    predicted response variable.
+#' @param compute.y.var  (\code{logical(1)}) \cr
+#'    If \code{TRUE} and the response is being estimated, the predictive
+#'    variance of each estimate will be computed.
 #' @param ...           further arguments
-#' @return returns a data frame of n' rows and with columns
+#'
+#' @return The function returns a data frame of \code{n.new} rows and with
+#' columns
 #' \itemize{
-#'   \item \code{SVC_1, ..., SVC_p}, i.e. the predicted SVC at locations \code{newlocs}
+#'   \item \code{SVC_1, ..., SVC_p}: the predicted SVC at locations \code{newlocs}.
 #'   \item \code{y.pred}, if \code{newX} and \code{newW} are provided
-#'   \item \code{y.var}, if \code{newX} and \code{newW} are provided and \code{compute.y.var} is set to \code{TRUE}.
+#'   \item \code{y.var}, if \code{newX} and \code{newW} are provided and
+#'   \code{compute.y.var} is set to \code{TRUE}.
 #'   \item \code{loc_x, loc_y}, the locations of the predictions
 #' }
 #'
@@ -698,6 +797,8 @@ SVC_mle.formula <- function(formula, data, RE_formula = NULL,
 #' control <- SVC_mle_control(
 #'   # initial values of optimization
 #'   init = rep(0.1, 2*p+1),
+#'   # lower bound
+#'   lower = rep(1e-6, 2*p+1),
 #'   # using profile likelihood
 #'   profileLik = TRUE
 #' )
@@ -720,10 +821,10 @@ SVC_mle.formula <- function(formula, data, RE_formula = NULL,
 #'
 #' ## prediction
 #' # new location
-#' newlocs <- matrix(0.5, ncol = 2, nrow = 1)
+#' newlocs <- matrix(0.5, ncol = 2, nrow = 2)
 #'
 #' # new data
-#' X.new <- matrix(rnorm(p), ncol = p)
+#' X.new <- matrix(rnorm(2*p), ncol = p)
 #'
 #' # predicting SVCs
 #' predict(fit, newlocs = newlocs)
@@ -738,10 +839,16 @@ SVC_mle.formula <- function(formula, data, RE_formula = NULL,
 #'         compute.y.var = TRUE)
 #'
 #' @import spam
-#' @importFrom fields rdist
-#' @importFrom stats dist sd
+#' @importFrom stats sd
 #' @export
-predict.SVC_mle <- function(object, newlocs = NULL, newX = NULL, newW = NULL, compute.y.var = FALSE, ...) {
+predict.SVC_mle <- function(
+  object,
+  newlocs = NULL,
+  newX = NULL,
+  newW = NULL,
+  compute.y.var = FALSE,
+  ...
+) {
 
   mu <- coef(object)
   cov.par <- cov_par(object)
@@ -756,13 +863,26 @@ predict.SVC_mle <- function(object, newlocs = NULL, newX = NULL, newW = NULL, co
   if (is.null(newlocs)) {
     # compute untapered distance matrix
     newlocs <- object$MLE$call.args$locs
-    d <- d_cross <- as.matrix(dist(newlocs))
+    d <- d_cross <- as.matrix(do.call(spam::nearest.dist,
+                                      c(list(x = newlocs,
+                                             delta  = 1e99,
+                                             upper = NULL),
+                                        object$MLE$call.args$control$dist)))
     n.new <- n
   } else {
-    d <- as.matrix(stats::dist(object$MLE$call.args$locs))
-    d_cross <- fields::rdist(newlocs, object$MLE$call.args$locs)
+    d <- as.matrix(do.call(spam::nearest.dist,
+                           c(list(x = object$MLE$call.args$locs,
+                                  delta  = 1e99,
+                                  upper = NULL),
+                             object$MLE$call.args$control$dist)))
+    d_cross <- as.matrix(do.call(spam::nearest.dist,
+                                 c(list(x = newlocs,
+                                        y = object$MLE$call.args$locs,
+                                        delta  = 1e99),
+                                   object$MLE$call.args$control$dist)))
     n.new <- nrow(newlocs)
   }
+
 
   # covariance function (not tapered)
   raw.cf <- MLE.cov.func(object$MLE$call.args$control$cov.name)
@@ -846,8 +966,16 @@ predict.SVC_mle <- function(object, newlocs = NULL, newX = NULL, newW = NULL, co
                             newX = newW)
 
       # Part A:
+      d_new <- if (n.new == 1) {
+        as.matrix(0)
+      } else {
+        as.matrix(do.call(spam::nearest.dist,
+                          c(list(x = newlocs,
+                                 delta  = 1e99,
+                                 upper = NULL),
+                            object$MLE$call.args$control$dist)))
+      }
 
-      d_new <- as.matrix(stats::dist(newlocs))
 
 
       if (is.null(object$MLE$call.args$control$taper)) {
