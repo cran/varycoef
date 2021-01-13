@@ -12,7 +12,7 @@
 
 <meta name="author" content="Jakob A. Dambon" />
 
-<meta name="date" content="2020-07-17" />
+<meta name="date" content="2021-01-12" />
 
 <title>Manual</title>
 
@@ -303,7 +303,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Manual</h1>
 <h4 class="author">Jakob A. Dambon</h4>
-<h4 class="date">2020-07-17</h4>
+<h4 class="date">2021-01-12</h4>
 
 
 <div id="TOC">
@@ -323,12 +323,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>The package <code>varycoef</code> contains methods to model and estimate varying coefficients. In its current version 0.2.12 it supports:</p>
+<p>The package <code>varycoef</code> contains methods to model and estimate varying coefficients. In its current version 0.3.0 it supports:</p>
 <ul>
 <li><p>only <em>spatially</em> varying coefficient (SVC)</p></li>
 <li><p>different MLE approaches to model SVC and to give predictions.</p></li>
 </ul>
-<p>The methodology is based on <span class="citation">(Dambon, Sigrist, and Furrer 2020)</span>.</p>
+<p>The methodology is based on <span class="citation">(Dambon, Sigrist, and Furrer 2021)</span>.</p>
 <div id="spatially-varying-coefficient-models" class="section level3">
 <h3>Spatially Varying Coefficient Models</h3>
 <p>We define a <em>full SVC model</em> as</p>
@@ -422,7 +422,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ##   ..$ method: chr &quot;euclidean&quot;</code></pre>
 <div id="covariance-function" class="section level4">
 <h4>Covariance Function</h4>
-<p>Here we define the covariance function <span class="math inline">\(C_j(s_k, s_l) = \sigma_j^2 \phi_{\rho_j}(s_k, s_l)\)</span>. In its current version 0.2.12, <code>varycoef</code> supports only exponential covariance functions, i.e. <span class="math inline">\(\phi_{\rho}(s_k, s_l) = \exp\left(\frac{\|s_k - s_l\|}{\rho}\right)\)</span>.</p>
+<p>Here we define the covariance function <span class="math inline">\(C_j(s_k, s_l) = \sigma_j^2 \phi_{\rho_j}(s_k, s_l)\)</span>. In its current version 0.3.0, <code>varycoef</code> supports only exponential covariance functions, i.e. <span class="math inline">\(\phi_{\rho}(s_k, s_l) = \exp\left(\frac{\|s_k - s_l\|}{\rho}\right)\)</span>.</p>
 </div>
 <div id="tapering" class="section level4">
 <h4>Tapering</h4>
@@ -439,13 +439,13 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb9-6"><a href="#cb9-6"></a>                      <span class="dt">tapering_0.1 =</span> out[[<span class="dv">4</span>]][[<span class="dv">4</span>]]())</span>
 <span id="cb9-7"><a href="#cb9-7"></a>)</span></code></pre></div>
 <pre><code>## Unit: milliseconds
-##          expr      min       lq     mean   median       uq      max neval  cld
-##   no_tapering 46.21343 48.88248 56.62776 51.56169 54.33374 143.0838   100   c 
-##  tapering_0.5 51.74820 54.67927 68.02814 57.07473 59.25977 153.6261   100    d
-##  tapering_0.3 34.85649 35.37703 43.10048 37.70815 40.00084 128.4862   100  b  
-##  tapering_0.1 20.76178 23.47047 27.98964 25.53650 26.76791 116.7115   100 a</code></pre>
+##          expr      min       lq     mean   median       uq      max neval cld
+##   no_tapering 49.58213 50.37040 62.00703 53.39572 54.61746 240.6759   100   b
+##  tapering_0.5 53.36417 56.38514 72.74536 57.52913 59.23605 257.9709   100   b
+##  tapering_0.3 32.73997 36.53168 43.90478 37.28464 40.21388 226.9037   100  a 
+##  tapering_0.1 20.93598 24.67909 29.89846 25.29569 28.97936 210.6243   100  a</code></pre>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">boxplot</span>(mb, <span class="dt">unit =</span> <span class="st">&quot;ms&quot;</span>, <span class="dt">log =</span> <span class="ot">TRUE</span>, <span class="dt">xlab =</span> <span class="st">&quot;tapering&quot;</span>, <span class="dt">ylab =</span> <span class="st">&quot;time (milliseconds)&quot;</span>)</span></code></pre></div>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 </div>
 <div id="initial-values" class="section level4">
 <h4>Initial Values</h4>
@@ -593,7 +593,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 ## MLE:
 ## The MLE terminated after 87 function evaluations with convergence code 0
 ## (0 meaning that the optimization was succesful).
-## The final likelihood value for 10 parameters is -290.3.</code></pre>
+## The final likelihood value for 6 parameters is -290.3.</code></pre>
 <div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># residual plots</span></span>
 <span id="cb34-2"><a href="#cb34-2"></a>oldpar &lt;-<span class="st"> </span><span class="kw">par</span>(<span class="dt">mfrow =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
 <span id="cb34-3"><a href="#cb34-3"></a><span class="kw">plot</span>(fit, <span class="dt">which =</span> <span class="dv">1</span><span class="op">:</span><span class="dv">2</span>)</span></code></pre></div>
@@ -670,13 +670,13 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h2>References</h2>
 <div id="refs" class="references">
 <div id="ref-Dambon2020">
-<p>Dambon, Jakob A., Fabio Sigrist, and Reinhard Furrer. 2020. “Maximum Likelihood Estimation of Spatially Varying Coefficient Models for Large Data with an Application to Real Estate Price Prediction.” <em>ArXiv E-Prints</em>. <a href="http://arxiv.org/abs/2001.08089">http://arxiv.org/abs/2001.08089</a>.</p>
+<p>Dambon, Jakob A., Fabio Sigrist, and Reinhard Furrer. 2021. “Maximum Likelihood Estimation of Spatially Varying Coefficient Models for Large Data with an Application to Real Estate Price Prediction.” <em>Spatial Statistics</em> 41 (100470). <a href="https://doi.org/10.1016/j.spasta.2020.100470">https://doi.org/10.1016/j.spasta.2020.100470</a>.</p>
 </div>
 <div id="ref-Furrer2006">
 <p>Furrer, Reinhard, Marc G Genton, and Douglas Nychka. 2006. “Covariance Tapering for Interpolation of Large Spatial Datasets.” <em>Journal of Computational and Graphical Statistics</em> 15 (3): 502–23. <a href="https://doi.org/10.1198/106186006X132178">https://doi.org/10.1198/106186006X132178</a>.</p>
 </div>
 <div id="ref-Rspam">
-<p>Furrer, Reinhard, and Stephan R. Sain. 2010. “<code>spam</code>: A Sparse Matrix <span class="sans-serif">R</span> Package with Emphasis on MCMC Methods for Gaussian Markov Random Fields.” <em>Journal of Statistical Software</em> 36 (10): 1–25. <a href="http://www.jstatsoft.org/v36/i10/">http://www.jstatsoft.org/v36/i10/</a>.</p>
+<p>Furrer, Reinhard, and Stephan R. Sain. 2010. “<code>spam</code>: A Sparse Matrix <span class="sans-serif">R</span> Package with Emphasis on MCMC Methods for Gaussian Markov Random Fields.” <em>Journal of Statistical Software</em> 36 (10): 1–25. <a href="https://www.jstatsoft.org/article/view/v036i10">https://www.jstatsoft.org/article/view/v036i10</a>.</p>
 </div>
 <div id="ref-FG2019">
 <p>Gerber, Florian, and Reinhard Furrer. 2019. “<code>optimParallel</code>: An <span class="sans-serif">R</span> Package Providing a Parallel Version of the L-BFGS-B Optimization Method.” <em>The R Journal</em> 11 (1): 352–58. <a href="https://doi.org/10.32614/RJ-2019-030">https://doi.org/10.32614/RJ-2019-030</a>.</p>

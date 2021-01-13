@@ -113,6 +113,12 @@ predict(fit, newlocs = newlocs,
         compute.y.var = TRUE)
 
 }
+\references{
+Dambon, J. A., Sigrist, F., Furrer, R. (2021)
+   \emph{Maximum likelihood estimation of spatially varying coefficient
+   models for large data with an application to real estate price prediction},
+   Spatial Statistics \doi{10.1016/j.spasta.2020.100470}
+}
 \seealso{
 \code{\link{SVC_mle}}
 }

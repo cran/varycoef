@@ -294,8 +294,14 @@ MLE_computation <- function(y, X, locs, W,
     mu <- NULL
   }
 
-
-
+  # effective degrees of freedom
+  edof <- eff_dof(
+    cov.par  = optim.output$par[1:(2*pW+1)],
+    cov_func = cov.func,
+    outer.W  = outer.W,
+    X        = X,
+    taper    = taper
+  )
 
 
   # preparing output
@@ -311,8 +317,9 @@ MLE_computation <- function(y, X, locs, W,
                                lower = lower,
                                upper = upper,
                                init  = init,
-                               pW = pW,
-                               pX = pX)))
+                               pW    = pW,
+                               pX    = pX,
+                               edof  = edof)))
 
 
 }
@@ -346,10 +353,16 @@ create_SVC_mle <- function(ML_estimate, y, X, W, locs, control) {
     mu <- hyper.par[2*pW+1 + 1:pX]
   }
 
+  # non zero parameters, i.e., means or variances
+  df <- sum(abs(c(mu, cov.par[2*(1:pW)])) > 1e-10)
 
   SVC_obj <- list(MLE = ML_estimate,
                   coefficients = mu,
                   cov.par = cov.par,
+                  # (effective) degrees of freedom
+                  df = list(
+                    df = as.integer(df),
+                    edof = ML_estimate$comp.args$edof),
                   fitted = NULL,
                   residuals = NULL,
                   data = list(y = y, X = X, W = W, locs = locs))
@@ -515,8 +528,10 @@ SVC_mle_control.SVC_mle <- function(object, ...) {
 
 #' @title MLE of SVC model
 #'
-#' @description Conducts a maximum likelihood (MLE) estimation for an SVC model
-#' defined as:
+#' @description Conducts a maximum likelihood estimation (MLE) for a Gaussian
+#'   process-based SVC model as described in Dambon et al. (2021)
+#'   \doi{10.1016/j.spasta.2020.100470}. More specifially, the model is
+#'   defined as:
 #'
 #' \deqn{y(s) = X \mu + W \eta (s) + \epsilon(s)}
 #'
@@ -536,7 +551,7 @@ SVC_mle_control.SVC_mle <- function(object, ...) {
 #' (if parallelized) \code{\link[optimParallel]{optimParallel}}.
 #'
 #' @param y  (\code{numeric(n)}) \cr
-#'    Response.
+#'    Response vector.
 #' @param X  (\code{matrix(n, q)}) \cr
 #'    Design matrix. Intercept has to be added manually.
 #' @param locs  (\code{matrix(n, d)}) \cr
@@ -563,6 +578,10 @@ SVC_mle_control.SVC_mle <- function(object, ...) {
 #' }
 #' For further detials, see description of \code{\link{SVC_mle_control}}.
 #'
+#' @references Dambon, J. A., Sigrist, F., Furrer, R. (2021)
+#'    \emph{Maximum likelihood estimation of spatially varying coefficient
+#'    models for large data with an application to real estate price prediction},
+#'    Spatial Statistics \doi{10.1016/j.spasta.2020.100470}
 #' @author Jakob Dambon
 #'
 #' @seealso \code{\link{predict.SVC_mle}}
@@ -774,6 +793,10 @@ SVC_mle.formula <- function(formula, data, RE_formula = NULL,
 #' @seealso \code{\link{SVC_mle}}
 #'
 #' @author Jakob Dambon
+#' @references Dambon, J. A., Sigrist, F., Furrer, R. (2021)
+#'    \emph{Maximum likelihood estimation of spatially varying coefficient
+#'    models for large data with an application to real estate price prediction},
+#'    Spatial Statistics \doi{10.1016/j.spasta.2020.100470}
 #'
 #' @examples
 #' ## ---- toy example ----

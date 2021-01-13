@@ -24,7 +24,7 @@ SVC_mle(...)
 \item{...}{further arguments}
 
 \item{y}{(\code{numeric(n)}) \cr
-Response.}
+Response vector.}
 
 \item{X}{(\code{matrix(n, q)}) \cr
 Design matrix. Intercept has to be added manually.}
@@ -63,8 +63,10 @@ the function returns a list with two entries:
 For further detials, see description of \code{\link{SVC_mle_control}}.
 }
 \description{
-Conducts a maximum likelihood (MLE) estimation for an SVC model
-defined as:
+Conducts a maximum likelihood estimation (MLE) for a Gaussian
+  process-based SVC model as described in Dambon et al. (2021)
+  \doi{10.1016/j.spasta.2020.100470}. More specifially, the model is
+  defined as:
 
 \deqn{y(s) = X \mu + W \eta (s) + \epsilon(s)}
 
@@ -182,6 +184,12 @@ sp.SVC <- SVC
 coordinates(sp.SVC) <- ~loc_x+loc_y
 spplot(sp.SVC, colorkey = TRUE)
 }
+}
+\references{
+Dambon, J. A., Sigrist, F., Furrer, R. (2021)
+   \emph{Maximum likelihood estimation of spatially varying coefficient
+   models for large data with an application to real estate price prediction},
+   Spatial Statistics \doi{10.1016/j.spasta.2020.100470}
 }
 \seealso{
 \code{\link{predict.SVC_mle}}
