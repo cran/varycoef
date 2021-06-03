@@ -84,13 +84,15 @@ selection_control$CD.conv$logLik <- FALSE
 
 }
 \references{
-Bischl, B., Richter, J., Bossek, J., Horn, D., Thomas, J., Lang, M. (2017).
-   \emph{mlrMBO: A Modular Framework for Model-Based Optimization of Expensive Black-Box Functions},
+Bischl, B., Richter, J., Bossek, J., Horn, D., Thomas, J.,
+   Lang, M. (2017).
+   \emph{mlrMBO: A Modular Framework for Model-Based Optimization of
+   Expensive Black-Box Functions},
    ArXiv preprint \url{https://arxiv.org/abs/1703.03373}
 
-   Dambon, J. A., Sigrist, F., Furrer, R. (2021)
-   \emph{Joint Variable Selection of both Fixed and Random Effects for Gaussian
-   Process-based Spatially Varying Coefficient Models},
+   Dambon, J. A., Sigrist, F., Furrer, R. (2021).
+   \emph{Joint Variable Selection of both Fixed and Random Effects for
+   Gaussian Process-based Spatially Varying Coefficient Models},
    ArXiv preprint \url{https://arxiv.org/abs/2101.01932}
 }
 \author{

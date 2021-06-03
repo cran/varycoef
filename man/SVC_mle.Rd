@@ -26,14 +26,14 @@ SVC_mle(...)
 \item{y}{(\code{numeric(n)}) \cr
 Response vector.}
 
-\item{X}{(\code{matrix(n, q)}) \cr
+\item{X}{(\code{matrix(n, p)}) \cr
 Design matrix. Intercept has to be added manually.}
 
 \item{locs}{(\code{matrix(n, d)}) \cr
 Locations in a \eqn{d}-dimensional space. May contain multiple
 observations at single location.}
 
-\item{W}{(\code{NULL} or \code{matrix(n, p)}) \cr
+\item{W}{(\code{NULL} or \code{matrix(n, q)}) \cr
 If \code{NULL}, the same matrix as provided in \code{X} is used. This
 fits a full SVC model, i.e., each covariate effect is modeled with a mean
 and an SVC. In this case we have \eqn{p = q}. If optional matrix \code{W}
@@ -74,10 +74,10 @@ where:
 \itemize{
   \item \eqn{y} is the response (vector of length \eqn{n})
   \item \eqn{X} is the data matrix for the fixed effects covariates. The
-  dimensions are \eqn{n} times \eqn{q}. This leads to \eqn{q} fixed effects.
+  dimensions are \eqn{n} times \eqn{p}. This leads to \eqn{p} fixed effects.
   \item \eqn{\mu} is the vector containing the fixed effects
   \item W is the data matrix for the SVCs modeled by GPs. The dimensions are
-  \eqn{n} times \eqn{p}. This lead to \eqn{p} SVCs in the model.
+  \eqn{n} times \eqn{q}. This lead to \eqn{q} SVCs in the model.
   \item \eqn{\eta} are the SVCs represented by a GP.
   \item \eqn{\epsilon} is the nugget effect
 }
@@ -181,7 +181,7 @@ newlocs <- expand.grid(
 SVC <- predict(fit, newlocs = as.matrix(newlocs))
 # visualization
 sp.SVC <- SVC
-coordinates(sp.SVC) <- ~loc_x+loc_y
+coordinates(sp.SVC) <- ~loc_1+loc_2
 spplot(sp.SVC, colorkey = TRUE)
 }
 }

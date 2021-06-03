@@ -6,64 +6,55 @@ library(varycoef)
 # number of SVC
 p <- 3
 
-(pars <- data.frame(mu = rep(0, p), 
+(pars <- data.frame(mean = rep(0, p), 
                     var = c(0.1, 0.2, 0.3), 
                     scale = c(0.3, 0.1, 0.2)))
 nugget.var <- 0.05
 
 # sqrt of total number of observations
-m <- 20
-
-
-
+m <- 10; n <- m^2
+locs <- expand.grid(
+  x = seq(0, 1, length.out = m), 
+  y = seq(0, 1, length.out = m)
+)
 
 # function to sample SVCs
-sp.SVC <- fullSVC_reggrid(m = m, p = p, 
-                          cov_pars = pars, 
-                          nugget = nugget.var)
+sp.SVC <- sample_fullSVC(
+  df.pars = pars, 
+  nugget.sd = sqrt(nugget.var), 
+  locs = as.matrix(locs), 
+  cov.name = "exp"
+)
+str(sp.SVC)
 
-library(sp)
-# visualization
-spplot(sp.SVC, colorkey = TRUE)
-
-## ----sample covariates--------------------------------------------------------
-# total number of observation
-n <- m^2
-
-X <- matrix(c(rep(1, n), rnorm((p-1)*n)), ncol = p)
-head(X)
-
-## ----compute response---------------------------------------------------------
-y <- apply(X * as.matrix(sp.SVC@data[, 1:p]), 1, sum) + sp.SVC@data[, p+1]
+head(cbind(y = sp.SVC$y, X = sp.SVC$X))
 
 ## ----contorl parameters-------------------------------------------------------
 control <- SVC_mle_control()
 str(control)
 
 ## ----illustrate tapering, echo = FALSE, fig.width=7, fig.height=7-------------
-
+W <- sp.SVC$X
+q <- dim(W)[2]
 r <- c(0.5, 0.3, 0.1)
 out <- lapply(c(list(NULL), as.list(r)), function(taper.range) {
   
   
-  locs <- coordinates(sp.SVC)
-  if (is.null(taper.range)) {
-    d <- as.matrix(dist(locs))
-  } else {
-    d <- spam::nearest.dist(locs, delta = taper.range)
-  }
-  
+  d <- varycoef:::own_dist(x = locs, taper = taper.range) 
   
   # get covariance function
   raw.cov.func <- varycoef:::MLE.cov.func("exp")
   
   # covariance function
   cov.func <- function(x) raw.cov.func(d, x)
-    
   
-  W <- X
-  
-  outer.W <- lapply(1:p, function(j) W[, j]%o%W[, j])
+  outer.W <- lapply(1:q, function(k) {
+    if (is.null(taper.range)) {
+      W[, k]%o%W[, k] 
+    } else {
+      W[, k]%o%W[, k]*spam::cov.wend1(d, c(taper.range, 1, 0))
+    } 
+  })
   
   
   # tapering?
@@ -77,9 +68,9 @@ out <- lapply(c(list(NULL), as.list(r)), function(taper.range) {
   
   x <- c(rep(1, 2*p+1), rep(0, p))
   
-  S_y <- varycoef:::Sigma_y(x, p, cov.func, outer.W, taper)
+  S_y <- varycoef:::Sigma_y(x, cov.func, outer.W, taper)
   
-  nll <- function() varycoef:::n2LL(x, cov.func, outer.W, y, X, W, taper = taper)
+  nll <- function() varycoef:::n2LL(x, cov.func, outer.W, sp.SVC$y, sp.SVC$X, W, mean.est = NULL, taper = taper)
   
   list(d, taper, S_y, nll)
 })
@@ -116,45 +107,6 @@ library(microbenchmark)
 
 boxplot(mb, unit = "ms", log = TRUE, xlab = "tapering", ylab = "time (milliseconds)")
 
-## ----mean initials------------------------------------------------------------
-(mu.init <- coef(lm(y~.-1, data = data.frame(y = y, X = X))))
-
-## ----variance initials--------------------------------------------------------
-(var.init <- sigma(lm(y~.-1, data = data.frame(y = y, X = X)))^2)
-
-## ----scale initials-----------------------------------------------------------
-scale.init <- 0.2
-
-## ----joint initials-----------------------------------------------------------
-init <- c(
-  # GRFs scales and variances
-  rep(c(scale.init, var.init), p),
-  # nugget variance
-  var.init,
-   # means
-  mu.init)
-
-## ----overwrite initials-------------------------------------------------------
-# default
-control$init
-
-# overwrite
-control$init <- init
-
-# create new
-control <- SVC_mle_control(init = init)
-
-## ----overwrite save.fitted----------------------------------------------------
-# default
-control$save.fitted
-
-# overwrite
-control$save.fitted <- TRUE
-
-## ----show profileLik----------------------------------------------------------
-# default
-control$profileLik
-
 ## ----parallel, eval=FALSE-----------------------------------------------------
 #  require(varycoef)
 #  require(parallel)
@@ -182,7 +134,8 @@ control$profileLik
 #  rm(control.p, fit.p)
 
 ## ----SVC MLE------------------------------------------------------------------
-fit <- SVC_mle(y = y, X = X, locs = coordinates(sp.SVC), control = control)
+control <- SVC_mle_control()
+fit <- SVC_mle(y = sp.SVC$y, X = sp.SVC$X, locs = as.matrix(locs), control = control)
 
 ## ----SVC_mle methods, fig.width=7, fig.height=7-------------------------------
 # estimated ...
@@ -199,7 +152,6 @@ oldpar <- par(mfrow = c(1, 2))
 plot(fit, which = 1:2)
 
 par(mfrow = c(1, 1))
-plot(fit, which = 3)
 
 par(oldpar)
 
@@ -209,14 +161,15 @@ par(oldpar)
 pred.SVC <- predict(fit)
 
 ## ----visualization of prediction, fig.width=7, fig.height=7-------------------
+library(sp)
 colnames(pred.SVC)[1:p] <- paste0("pred.",colnames(pred.SVC)[1:p])
-coordinates(pred.SVC) <- ~loc_x+loc_y
-all.SVC <- cbind(pred.SVC, sp.SVC[, 1:3])
+coordinates(pred.SVC) <- ~loc_1+loc_2
+all.SVC <- cbind(pred.SVC, sp.SVC$beta)
 
 # compute errors
-all.SVC$err.SVC_1 <- all.SVC$pred.SVC_1 - all.SVC$SVC_1
-all.SVC$err.SVC_2 <- all.SVC$pred.SVC_2 - all.SVC$SVC_2
-all.SVC$err.SVC_3 <- all.SVC$pred.SVC_3 - all.SVC$SVC_3
+all.SVC$err.SVC_1 <- all.SVC$pred.SVC_1 - all.SVC$X1
+all.SVC$err.SVC_2 <- all.SVC$pred.SVC_2 - all.SVC$X2
+all.SVC$err.SVC_3 <- all.SVC$pred.SVC_3 - all.SVC$X3
 
 colnames(all.SVC@data) <- paste0(rep(c("pred.", "true.", "err."), each = p), "SVC_", rep(1:p, 3))
 

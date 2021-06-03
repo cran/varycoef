@@ -9,7 +9,7 @@
 SVC_mle_control(...)
 
 \method{SVC_mle_control}{default}(
-  cov.name = c("exp", "sph"),
+  cov.name = c("exp", "sph", "mat32", "mat52", "wend1", "wend2"),
   tapering = NULL,
   parallel = NULL,
   init = NULL,
@@ -20,7 +20,7 @@ SVC_mle_control(...)
   mean.est = c("GLS", "OLS"),
   pc.prior = NULL,
   extract_fun = FALSE,
-  hessian = FALSE,
+  hessian = TRUE,
   dist = list(method = "euclidean"),
   ...
 )
@@ -28,36 +28,40 @@ SVC_mle_control(...)
 \method{SVC_mle_control}{SVC_mle}(object, ...)
 }
 \arguments{
-\item{...}{further parameters yet to be implemented}
+\item{...}{Further Arguments yet to be implemented}
 
 \item{cov.name}{(\code{character(1)}) \cr
-Name of the covariance function defining the covariance matrix of the GRF.
-Currently, only \code{"exp"} for the exponential and \code{"exp"} for
-spherical covariance functions are supported.}
+Name of the covariance function of the GPs. Currently, the following are
+implemented: \code{"exp"} for the exponential, \code{"sph"} for
+spherical, \code{"mat32"} and \code{"mat52"} for Matern class covariance
+functions with smoothness 3/2 or 5/2, as well as \code{"wend1"} and
+\code{"wend2"} for Wendland class covariance functions with kappa 1 or 2.}
 
 \item{tapering}{(\code{NULL} or \code{numeric(1)}) \cr
 If \code{NULL}, no tapering is applied. If a scalar is given, covariance
 tapering with this taper range is applied, for all Gaussian processes
-modelling the SVC.}
+modeling the SVC. Only defined for Matern class covariance functions,
+i.e., set \code{cov.name} either to \code{"exp"}, \code{"mat32"}, or
+\code{"mat52"}.}
 
 \item{parallel}{(\code{NULL} or \code{list}) \cr
 If \code{NULL}, no parallelization is applied. If cluster has been
 established, define arguments for parallelization with a list, see
-documentation of \code{\link[optimParallel]{optimParallel}}.}
+documentation of \code{\link[optimParallel]{optimParallel}}. See Examples.}
 
-\item{init}{(\code{numeric(2p+1+q*as.numeric(profileLik))}) \cr
-Initial values for optimization procedure. The vector consists of p-times
-(alternating) scale and variance, the nugget variance and (if
-\code{profileLik = TRUE}) q mean effects.}
+\item{init}{(\code{NULL} or \code{numeric(2q+1+p*as.numeric(profileLik))}) \cr
+Initial values for optimization procedure. If \code{NULL} is given, an
+initial vector is calculated (see Details). Otherwise, the vector is
+assumed to consist of q-times (alternating) range and variance,
+the nugget variance and if \code{profileLik = TRUE} p mean effects.}
 
-\item{lower}{(\code{NULL} or \code{numeric(2p+1+q*as.numeric(profileLik))}) \cr
-Lower bound for \code{init} in \code{optim}. Default \code{NULL} sets the
-lower bounds to 1e-05 for range and nugget parameters, 0 for variance
-parameters and \code{-Inf} for mean parameters.}
+\item{lower}{(\code{NULL} or \code{numeric(2q+1+p*as.numeric(profileLik))}) \cr
+Lower bound for \code{init} in \code{optim}. Default \code{NULL} calculates
+the lower bounds (see Details).}
 
-\item{upper}{(\code{NULL} or \code{numeric(2p+1+q*as.numeric(profileLik))}) \cr
-Upper bound for \code{init} in \code{optim}. Default \code{NULL} sets the
-upper bounds for all parameters to \code{Inf}.}
+\item{upper}{(\code{NULL} or \code{numeric(2q+1+p*as.numeric(profileLik))}) \cr
+Upper bound for \code{init} in \code{optim}. Default \code{NULL} calculates
+the upper bounds (see Details).}
 
 \item{save.fitted}{(\code{logical(1)}) \cr
 If \code{TRUE}, calculates the fitted values and residuals after MLE and
@@ -88,16 +92,17 @@ the MLE and gives back the objective function of the MLE as well as all
 used arguments. If \code{FALSE}, regular MLE is conducted.}
 
 \item{hessian}{(\code{logical(1)}) \cr
-If \code{FALSE}, Hessian matrix is computed, see \link[stats]{optim}.}
+If \code{TRUE}, Hessian matrix is computed, see \link[stats]{optim}. This
+required to give the standard errors for covariance parameters and to do
+a Wald test on the variances, see \code{\link{summary.SVC_mle}}.}
 
 \item{dist}{(\code{list}) \cr
-List containing the arguments of \link[spam]{nearestdist}. This controls
+List containing the arguments of \link[stats]{dist} or
+\link[spam]{nearest.dist}. This controls
 the method of how the distances and therefore dependency structures are
 calculated. The default gives Euclidean distances in a \eqn{d}-dimensional
-space. Further editable arguments are \code{p, miles, R}, see help file of
-\link[spam]{nearestdist}. The other arguments, i.e., \code{x, y, delta, upper},
-are set and not to be altered. Without tapering, \code{delta} is set to
-\eqn{1e99}.}
+space. Further editable arguments are \code{p, miles, R}, see respective
+help files of \link[stats]{dist} or \link[spam]{nearest.dist}.}
 
 \item{object}{(\code{SVC_mle}) \cr
 The function then extracts the control settings from the function call
@@ -108,11 +113,16 @@ A list with which \code{\link{SVC_mle}} can be controlled.
 }
 \description{
 Function to set up control parameters for \code{\link{SVC_mle}}.
-In the following, we assume the SVC model to have \eqn{p} GPs, which model the
-SVCs, and \eqn{q} fixed effects.
+In the following, we assume the GP-based SVC model to have \eqn{q} GPs which
+model the SVCs and \eqn{p} fixed effects.
 }
 \details{
-The argument \code{extract_fun} is useful, when one wants to modify
+If not provided, the initial values as well as the lower and upper
+   bounds are calculated given the provided data. In particular, we require
+   the median distance between observations, the variance of the response and,
+   the ordinary least square (OLS) estimates, see \code{\link{init_bounds_optim}}.
+
+   The argument \code{extract_fun} is useful, when one wants to modify
    the objective function. Further, when trying to parallelize the
    optimization, it is useful to check whether a single evaluation of the
    objective function takes longer than 0.05 seconds to evaluate,
@@ -125,6 +135,23 @@ control <- SVC_mle_control(init = rep(0.3, 10))
 control <- SVC_mle_control()
 control$init <- rep(0.3, 10)
 
+\donttest{
+# Code for setting up parallel computing
+require(parallel)
+# exchange number of nodes (1) for detectCores()-1 or appropriate number
+cl <- makeCluster(1, setup_strategy = "sequential")
+clusterEvalQ(
+  cl = cl,
+  {
+    library(spam)
+    library(varycoef)
+  })
+# use this list for parallel argument in SVC_mle_control
+parallel.control <- list(cl = cl, forward = TRUE, loginfo = TRUE)
+# SVC_mle goes here ...
+# DO NOT FORGET TO STOP THE CLUSTER!
+stopCluster(cl); rm(cl)
+}
 }
 \seealso{
 \code{\link{SVC_mle}}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/example.R
 \name{fullSVC_reggrid}
 \alias{fullSVC_reggrid}
-\title{Sample Function for SVCs}
+\title{Sample Function for GP-based SVC Models on Regular Grid}
 \usage{
 fullSVC_reggrid(m, p, cov_pars, nugget, seed = 123, given.locs = NULL)
 }
@@ -16,8 +16,8 @@ Number of SVCs.}
 
 \item{cov_pars}{(\code{data.frame(p, 2)}) \cr
 Contains the covariance parameters of SVCs. The two columns must have the
-names \code{"var"} and \code{"scale"}. These covariance parameters are
-then used for sampling the respective SVCs.}
+names \code{"nu"}, \code{"var"} and \code{"scale"}. These covariance
+parameters are then used for sampling the respective SVCs.}
 
 \item{nugget}{(\code{numeric(1)}) \cr
 Variance of the nugget / error term.}
@@ -32,13 +32,14 @@ The data frame must have two columns of name \code{"x"} and \code{"y"}.
 The number of observations is then the number of rows \code{n}.}
 }
 \value{
-\code{SpatialPointsDataFrame} \cr
-   (see \code{\link[sp]{SpatialPointsDataFrame-class}}) of the sampled SVC
-   including the nugget.
+(\code{data.frame}(m*m, p+3) \cr
+   Data frame with \code{p+3} columns: first \code{p} are SVCs followed by a
+   nugget and two columns for coordinates, i.e., locations. Number of
+   observations is \code{m*m}.
 }
 \description{
-Samples SVCs on a regular quadratic (Cartesian) grid. The SVCs
-have all mean 0 and an exponential covariance function is used.
+Samples SVC data on a regular quadratic (Cartesian) grid. The
+SVCs have all mean 0 and an Matern covariance function is used.
 }
 \examples{
 # number of SVC
@@ -46,17 +47,17 @@ p <- 3
 # sqrt of total number of observations
 m <- 20
 # covariance parameters
-(pars <- data.frame(var = c(0.1, 0.2, 0.3),
-                    scale = c(0.3, 0.1, 0.2)))
+(pars <- data.frame(
+  nu = rep(0.5, p),
+  var = c(0.1, 0.2, 0.3),
+  scale = c(0.3, 0.1, 0.2)
+))
 nugget.var <- 0.05
 
 # function to sample SVCs
 sp.SVC <- fullSVC_reggrid(m = m, p = p,
                           cov_pars = pars,
                           nugget = nugget.var)
-
-library(sp)
-# visualization of sampled SVC
-spplot(sp.SVC, colorkey = TRUE)
+head(sp.SVC)
 
 }

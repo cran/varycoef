@@ -27,7 +27,7 @@ CD_mu <- function(
 
   ## transform from GLS to OLS
   # compute covariance matrix and Cholesky-decomp thereof
-  C.mat <- Sigma_y(theta.k, q, obj.fun$args$cov_func, obj.fun$args$outer.W)
+  C.mat <- Sigma_y(theta.k, obj.fun$args$cov_func, obj.fun$args$outer.W)
   R <- spam::chol(C.mat)
   R.t.inv <- solve(t(R))
   # transform
@@ -146,7 +146,7 @@ PMLE_CD <- function(
   # mean parameter
   mu.par <- matrix(NA, nrow = CD.conv$N + 1, ncol = p)
   I.C.mat <- solve(
-    Sigma_y(mle.par, q, obj.fun$args$cov_func, obj.fun$args$outer.W)
+    Sigma_y(mle.par, obj.fun$args$cov_func, obj.fun$args$outer.W)
   )
   B <- crossprod(obj.fun$args$X, I.C.mat)
   mu.par[1, ] <- solve(B %*% obj.fun$args$X) %*% B %*% obj.fun$args$y
@@ -397,13 +397,15 @@ IC_opt_MBO <- function(
 #'
 #' @author Jakob Dambon
 #'
-#' @references Bischl, B., Richter, J., Bossek, J., Horn, D., Thomas, J., Lang, M. (2017).
-#'    \emph{mlrMBO: A Modular Framework for Model-Based Optimization of Expensive Black-Box Functions},
+#' @references Bischl, B., Richter, J., Bossek, J., Horn, D., Thomas, J.,
+#'    Lang, M. (2017).
+#'    \emph{mlrMBO: A Modular Framework for Model-Based Optimization of
+#'    Expensive Black-Box Functions},
 #'    ArXiv preprint \url{https://arxiv.org/abs/1703.03373}
 #'
-#'    Dambon, J. A., Sigrist, F., Furrer, R. (2021)
-#'    \emph{Joint Variable Selection of both Fixed and Random Effects for Gaussian
-#'    Process-based Spatially Varying Coefficient Models},
+#'    Dambon, J. A., Sigrist, F., Furrer, R. (2021).
+#'    \emph{Joint Variable Selection of both Fixed and Random Effects for
+#'    Gaussian Process-based Spatially Varying Coefficient Models},
 #'    ArXiv preprint \url{https://arxiv.org/abs/2101.01932}
 #'
 #'
