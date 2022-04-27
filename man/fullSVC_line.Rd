@@ -7,7 +7,7 @@
 fullSVC_line(df.pars, nugget.sd, locs)
 }
 \arguments{
-\item{df.pars}{(\code{data.frame(p, 3)}) \cr
+\item{df.pars}{(\code{data.frame(p, 4)}) \cr
 Contains the mean and covariance parameters of SVCs. The four columns
 must have the names \code{"mean"}, \code{"nu"}, \code{"var"}, and
 \code{"scale"}.}

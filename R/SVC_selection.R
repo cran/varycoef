@@ -137,7 +137,7 @@ PMLE_CD <- function(
   ## dimensions
   n <- nrow(obj.fun$args$X)
   p <- ncol(obj.fun$args$X)
-  q <- length(obj.fun$arg$outer.W)
+  q <- length(obj.fun$args$outer.W)
 
   ## initialize output matrix
   # covariance parameters
@@ -201,8 +201,8 @@ PMLE_CD <- function(
           abs(loglik.CD[k]) < CD.conv$delta) break
     } else {
       # on the parameters
-      if (sum(abs(c.par[k, ] - c.par[k+1, ]))/
-          sum(abs(c.par[k, ])) < CD.conv$delta) break
+      if (sum(abs(c(c.par[k, ], mu.par[k, ]) - c(c.par[k+1, ], mu.par[k+1, ])))/
+          sum(abs(c(c.par[k, ], mu.par[k, ]))) < CD.conv$delta) break
     }
   }
 

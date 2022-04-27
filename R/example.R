@@ -94,7 +94,7 @@ fullSVC_reggrid <- function(m, p, cov_pars, nugget, seed = 123, given.locs = NUL
 #' respective observation locations. The error vector sampled from a nugget
 #' effect. Finally, the response vector is computed.
 #'
-#' @param df.pars (\code{data.frame(p, 3)}) \cr
+#' @param df.pars (\code{data.frame(p, 4)}) \cr
 #'    Contains the mean and covariance parameters of SVCs. The four columns
 #'    must have the names \code{"mean"}, \code{"nu"}, \code{"var"}, and
 #'    \code{"scale"}.
@@ -139,7 +139,11 @@ fullSVC_line <- function(df.pars, nugget.sd, locs) {
   # SVCs
   beta <- apply(df.pars, 1, function(x) {
     RandomFields::RFsimulate(
-      RandomFields::RMmatern(nu = x["nu"], var = x["var"], scale = x["scale"]) +
+      RandomFields::RMmatern(
+        nu = x["nu"], var = x["var"],
+        # matching different parametrizations of Matern covariance function
+        # between spam and RandomFields package
+        scale = sqrt(2*x["nu"])*x["scale"]) +
         RandomFields::RMtrend(mean = x["mean"]),
       x = locs)@data$variable
   })
