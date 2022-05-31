@@ -1,5 +1,5 @@
-1047de67aa91cc30841770f3590cc7e7 *DESCRIPTION
-0cbf6037e990ff5c430657c65436826a *NAMESPACE
+ca74c0c2a17d845560f303285658773d *DESCRIPTION
+afeffcad46560973135eb460c0127145 *NAMESPACE
 4faae8ff0c6d46a9d18469fecce89bbb *R/BIC-SVC_mle.R
 050eb27d05635b9cd4678e98eaf78a6b *R/SVC_mle.R
 c27d5e1a787b08c41c49326b2e97285e *R/SVC_selection.R
@@ -7,7 +7,6 @@ d4eb4abc3ea437a41800c2f7467b3fe9 *R/coef-SVC_mle.R
 fee4f375b6cc30806b8ed1df304a111c *R/cov_par.R
 bda8b01fab9362fde67e211947945063 *R/data.R
 5b08b35bbfb9c5cb03c4ae18a61a5ea4 *R/eff_dof.R
-558d2c52b0b7d880692072413bf306fa *R/example.R
 fd160f91a17b160f897fc55c80f93fbc *R/fitted-SVC_mle.R
 8a877f683c6b78377a320350aee2b42d *R/help_functions.R
 078b27488aff6ee8798a14ee79555478 *R/logLik-SVC_mle.R
@@ -20,7 +19,7 @@ ff0416e5d903ee76e0b3c42ba37f38a9 *R/plot-SVC_mle.R
 b8eb3681f50e5951dfe7c48124861322 *R/residuals-SVC_mle.R
 18185a670d332c0e35d2f6cecbf123ea *R/summary-SVC_mle.R
 713862251658c13ce13f7914141899e1 *R/varycoef.R
-532faf8819cf1743d32486c8ca43ad8d *build/partial.rdb
+faa3d15dc471689f66432e37234adf13 *build/partial.rdb
 2e6594cbc1b506c5797980f5218b348f *data/house.rda
 7b005c10df2bb395851b2cdc3379ccf6 *inst/CITATION
 cc8cf4d413e96c0aa6dcfb7eb8fe6ae0 *man/GLS_chol.Rd
@@ -34,8 +33,6 @@ d9014fda844f9593d0715096da8c2c01 *man/SVC_selection.Rd
 5d3348dc309ad53bc7c441017b577633 *man/coef.SVC_mle.Rd
 2dda2629fd93c68ded00ef1567117d9f *man/cov_par.Rd
 abd6e5774f759a32f255291393e9fbb8 *man/fitted.SVC_mle.Rd
-cd46632b0b6968684b428ca09700f7c1 *man/fullSVC_line.Rd
-5daca35fbd7268ba178a6d4d85d867e1 *man/fullSVC_reggrid.Rd
 fa12e44d085fca19e82cf38ac30d3ae1 *man/house.Rd
 6059079b219640a9bd4d008a08fb1405 *man/init_bounds_optim.Rd
 d028beba710b775e7eb626d320338da1 *man/logLik.SVC_mle.Rd
@@ -48,6 +45,5 @@ a681fa6f7ba8f295233e9003a988faa7 *man/nobs.SVC_mle.Rd
 f4f4c5229fd15038454858e0d7cc9741 *man/print.SVC_mle.Rd
 54527d8c8f4f279b0fb8f4243fab135a *man/print.summary.SVC_mle.Rd
 1daaaf5a7ef8b4465ff2c3cbcf4e7517 *man/residuals.SVC_mle.Rd
-c50d8fa5e8a77d141abf5bcff30252b9 *man/sample_fullSVC.Rd
 8aa7980a18f83e969305ed2197b4361c *man/summary.SVC_mle.Rd
 11e18a15a24c02154126748cbd628ab0 *man/varycoef.Rd
