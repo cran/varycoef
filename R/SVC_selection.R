@@ -141,17 +141,17 @@ PMLE_CD <- function(
 
   ## initialize output matrix
   # covariance parameters
-  c.par <- matrix(NA, nrow = CD.conv$N + 1, ncol = 2*q+1)
+  c.par <- matrix(NA_real_, nrow = CD.conv$N + 1, ncol = 2*q+1)
   c.par[1, ] <- mle.par
   # mean parameter
-  mu.par <- matrix(NA, nrow = CD.conv$N + 1, ncol = p)
+  mu.par <- matrix(NA_real_, nrow = CD.conv$N + 1, ncol = p)
   I.C.mat <- solve(
     Sigma_y(mle.par, obj.fun$args$cov_func, obj.fun$args$outer.W)
   )
   B <- crossprod(obj.fun$args$X, I.C.mat)
   mu.par[1, ] <- solve(B %*% obj.fun$args$X) %*% B %*% obj.fun$args$y
   # log-likelihood
-  loglik.CD <- rep(NA, CD.conv$N + 1)
+  loglik.CD <- rep(NA_real_, CD.conv$N + 1)
 
   # update mean parameter for log-likelihood function
   obj.fun$args$mean.est <- mu.par[1, ]
@@ -350,7 +350,7 @@ IC_opt_MBO <- function(
 #'    then jointly selects fixed and random effects of the GP-based
 #'    SVC model using a penalized maximum likelihood estimation (PMLE).
 #'    In this function, one can set the parameters for the PMLE and
-#'    its optimization procedures (Dambon et al., 2021, <arXiv:2101.01932>).
+#'    its optimization procedures (Dambon et al., 2022).
 #'
 #' @param IC.type  (\code{character(1)}) \cr
 #'    Select Information Criterion.
@@ -403,10 +403,11 @@ IC_opt_MBO <- function(
 #'    Expensive Black-Box Functions},
 #'    ArXiv preprint \url{https://arxiv.org/abs/1703.03373}
 #'
-#'    Dambon, J. A., Sigrist, F., Furrer, R. (2021).
+#'    Dambon, J. A., Sigrist, F., Furrer, R. (2022).
 #'    \emph{Joint Variable Selection of both Fixed and Random Effects for
 #'    Gaussian Process-based Spatially Varying Coefficient Models},
-#'    ArXiv preprint \url{https://arxiv.org/abs/2101.01932}
+#'    International Journal of Geographical Information Science
+#'    \doi{10.1080/13658816.2022.2097684}
 #'
 #'
 #' @return A list of control parameters for SVC selection.
@@ -490,9 +491,10 @@ SVC_selection_control <- function(
 #'    of the whole SVC model on which the selection should be applied.
 #' @param mle.par   (\code{numeric(2*q+1)}) \cr
 #'    Numeric vector with estimated covariance parameters of unpenalized MLE.
-#' @param control   (\code{list}) \cr
+#' @param control   (\code{list} or \code{NULL}) \cr
 #'    List of control parameters for variable selection. Output of
-#'    \code{\link{SVC_selection_control}}.
+#'    \code{\link{SVC_selection_control}}. If \code{NULL} is given, the 
+#'    default values of \code{\link{SVC_selection_control}} are used.
 #' @param ...       Further arguments.
 #'
 #' @return Returns an object of class \code{SVC_selection}. It contains parameter estimates under PMLE and the optimization as well as choice of the shrinkage parameters.
@@ -511,20 +513,32 @@ SVC_selection_control <- function(
 SVC_selection <- function(
   obj.fun,
   mle.par,
-  control,
+  control = NULL,
   ...
 ) {
-
-  stopifnot(
-    class(obj.fun) == "SVC_obj_fun" |
-      is.numeric(mle.par)
-  )
 
   # dimensions
   n <- nrow(obj.fun$args$X)
   p <- ncol(obj.fun$args$X)
   q <- length(obj.fun$args$outer.W)
+  
+  # Error handling
+  if (is(obj.fun, "SVC_obj_fun")) {
+    stop("The obj.fun argument must be of class 'SVC_obj_fun', see help file.")
+  }
+  
+  if (!is.numeric(mle.par) | (length(mle.par) != 2*q+1)) {
+    stop(paste0(
+      "The mle.par argument must be a numeric vector of length ", 2*q+1, "!"
+    ))
+  }
+  
 
+  
+  if (is.null(control)) {
+    control <- SVC_selection_control()
+  }
+  
   # IC black-box function
   IC.obj <- function(lambda)
     do.call(PMLE_CD, list(
