@@ -1,7 +1,7 @@
 Type: Package
 Package: varycoef
 Title: Modeling Spatially Varying Coefficients
-Version: 0.3.5
+Version: 0.3.6
 Authors@R: c(
     person("Jakob A.", "Dambon", , "jakob.dambon@math.ethz.ch", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-5855-2017")),
@@ -34,10 +34,11 @@ LazyData: true
 RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2025-03-26 10:30:06 UTC; jakob
-Author: Jakob A. Dambon [aut, cre] (<https://orcid.org/0000-0001-5855-2017>),
-  Fabio Sigrist [ctb] (<https://orcid.org/0000-0002-3994-2244>),
-  Reinhard Furrer [ctb] (<https://orcid.org/0000-0002-6319-2332>)
+Packaged: 2025-05-04 12:11:29 UTC; jakob
+Author: Jakob A. Dambon [aut, cre] (ORCID:
+    <https://orcid.org/0000-0001-5855-2017>),
+  Fabio Sigrist [ctb] (ORCID: <https://orcid.org/0000-0002-3994-2244>),
+  Reinhard Furrer [ctb] (ORCID: <https://orcid.org/0000-0002-6319-2332>)
 Maintainer: Jakob A. Dambon <jakob.dambon@math.ethz.ch>
 Repository: CRAN
-Date/Publication: 2025-03-26 17:30:02 UTC
+Date/Publication: 2025-05-04 22:50:02 UTC

@@ -1,4 +1,4 @@
-c70ff43195efd3babb8501a920a16f93 *DESCRIPTION
+0382d10e31d888a2e140cbc08c6eae82 *DESCRIPTION
 9effdee3077a5a32163b8ff45d87a66c *NAMESPACE
 4faae8ff0c6d46a9d18469fecce89bbb *R/BIC-SVC_mle.R
 b18b9f1bf96f6bbf53d7de0993f74354 *R/SVC_mle.R
@@ -56,6 +56,6 @@ f4f4c5229fd15038454858e0d7cc9741 *man/print.SVC_mle.Rd
 5c8730bee25fb4d954717952c437bdfd *tests/testthat/test_SVC_mle.R
 c48f7f0119e879c9f503323953019923 *tests/testthat/test_SVC_selection.R
 e485398a2cfbf79a19d012382337c1ca *tests/testthat/test_example.R
-9362b049a933e935050796d95c558991 *tests/testthat/test_predict-SVC_mle.R
+3c1048124c26436e7685bc68b851c997 *tests/testthat/test_predict-SVC_mle.R
 20eeea7feb4c5dd039988cbbffbae0d4 *tests/testthat/test_utils.R
 3f64ce3ce87b972604c1e6d862c56918 *vignettes/Introduction.Rmd
